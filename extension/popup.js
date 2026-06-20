@@ -8,14 +8,9 @@ const ICON_PATHS = {
   expand: ["M6 9l6 6 6-6"],
   copy: [
     "M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z",
-    "M9 2h6"
+    "M9 2h6",
   ],
-  fullscreen: [
-    "M8 3H3v5",
-    "M16 3h5v5",
-    "M21 16v5h-5",
-    "M3 16v5h5"
-  ]
+  fullscreen: ["M8 3H3v5", "M16 3h5v5", "M21 16v5h-5", "M3 16v5h5"],
 };
 
 const elements = {
@@ -54,7 +49,7 @@ const elements = {
   cardModalMeta: queryElement("#cardModalMeta"),
   cardModalBody: queryElement("#cardModalBody"),
   cardModalCloseButton: queryElement("#cardModalCloseButton"),
-  cardModalCopyButton: queryElement("#cardModalCopyButton")
+  cardModalCopyButton: queryElement("#cardModalCopyButton"),
 };
 
 let currentPage = null;
@@ -86,9 +81,12 @@ async function init() {
   await Promise.allSettled([
     loadTools(),
     refreshPagePreview(),
-    runHealthCheck(false)
+    runHealthCheck(false),
   ]);
-  await refreshSessions(false, { selectMatchingPage: true, loadLatestIfEmpty: true });
+  await refreshSessions(false, {
+    selectMatchingPage: true,
+    loadLatestIfEmpty: true,
+  });
   if (!currentSession && !activeSessionId) {
     renderEmptySession();
   }
@@ -115,7 +113,7 @@ function renderFatalStartupError(missingElements) {
   const message = [
     "Codex Web Assistant 界面文件版本不一致。",
     `缺失元素：${missingElements.join(", ")}`,
-    "请在 chrome://extensions 重新加载这个扩展，然后重新打开侧边栏。"
+    "请在 chrome://extensions 重新加载这个扩展，然后重新打开侧边栏。",
   ];
   console.error(message.join("\n"));
 
@@ -189,7 +187,9 @@ function bindEvents() {
   });
   bindEvent(elements.openDebugButton, "click", async () => {
     closeMenu();
-    const response = await chrome.runtime.sendMessage({ type: "OPEN_DEBUG_PAGE" });
+    const response = await chrome.runtime.sendMessage({
+      type: "OPEN_DEBUG_PAGE",
+    });
     if (!response?.ok) {
       setStatus(response?.error || "打开调试页面失败。", "error");
     }
@@ -198,7 +198,12 @@ function bindEvents() {
   bindEvent(document, "click", (event) => {
     collapseSidebarFromOutsideClick(event);
 
-    if (!isStaticMenu() && !elements.menuPanel.hidden && !elements.menuPanel.contains(event.target) && event.target !== elements.menuButton) {
+    if (
+      !isStaticMenu() &&
+      !elements.menuPanel.hidden &&
+      !elements.menuPanel.contains(event.target) &&
+      event.target !== elements.menuButton
+    ) {
       closeMenu();
     }
   });
@@ -212,8 +217,15 @@ function bindEvents() {
   bindEvent(elements.saveSettingsButton, "click", saveSettings);
   bindEvent(elements.healthButton, "click", () => runHealthCheck(true));
   bindEvent(elements.copyButton, "click", copyLatestRun);
+  bindEvent(
+    elements.messageList,
+    "pointerdown",
+    collapseSidebarFromCardPointer
+  );
   bindEvent(elements.messageList, "scroll", syncScrollToBottomButton);
-  bindEvent(elements.scrollToBottomButton, "click", () => scrollMessagesToBottom());
+  bindEvent(elements.scrollToBottomButton, "click", () =>
+    scrollMessagesToBottom()
+  );
   bindEvent(elements.cardModalCloseButton, "click", closeCardModal);
   bindEvent(elements.cardModalCopyButton, "click", () => {
     if (activeModalCard) {
@@ -232,7 +244,10 @@ function bindEvents() {
 
   chrome.tabs?.onActivated?.addListener(() => schedulePageRefresh());
   chrome.tabs?.onUpdated?.addListener((_tabId, changeInfo, tab) => {
-    if (tab.active && (changeInfo.status === "complete" || changeInfo.title || changeInfo.url)) {
+    if (
+      tab.active &&
+      (changeInfo.status === "complete" || changeInfo.title || changeInfo.url)
+    ) {
       schedulePageRefresh();
     }
   });
@@ -250,8 +265,13 @@ function bindEvents() {
 
 async function loadSettings() {
   const legacy = await chrome.storage.sync.get(["serverUrl"]);
-  const stored = await chrome.storage.local.get(["serverUrl", "serverUrlHistory"]);
-  const serverUrl = normalizeServerUrl(stored.serverUrl || legacy.serverUrl || DEFAULT_SERVER_URL);
+  const stored = await chrome.storage.local.get([
+    "serverUrl",
+    "serverUrlHistory",
+  ]);
+  const serverUrl = normalizeServerUrl(
+    stored.serverUrl || legacy.serverUrl || DEFAULT_SERVER_URL
+  );
 
   serverUrlHistory = normalizeHistory(stored.serverUrlHistory);
   serverUrlHistory = addHistoryItem(serverUrlHistory, serverUrl);
@@ -262,7 +282,9 @@ async function loadSettings() {
 }
 
 async function saveSettings() {
-  const serverUrl = normalizeServerUrl(elements.serverUrl.value || DEFAULT_SERVER_URL);
+  const serverUrl = normalizeServerUrl(
+    elements.serverUrl.value || DEFAULT_SERVER_URL
+  );
   elements.serverUrl.value = serverUrl;
   serverUrlHistory = addHistoryItem(serverUrlHistory, serverUrl);
   await chrome.storage.local.set({ serverUrl, serverUrlHistory });
@@ -271,7 +293,7 @@ async function saveSettings() {
   await Promise.allSettled([
     loadTools(),
     runHealthCheck(false),
-    refreshSessions(false)
+    refreshSessions(false),
   ]);
 }
 
@@ -366,8 +388,13 @@ function renderPageContext(page) {
 }
 
 async function extractCurrentPage() {
-  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-  const fallbackTabs = tab ? [] : await chrome.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await chrome.tabs.query({
+    active: true,
+    lastFocusedWindow: true,
+  });
+  const fallbackTabs = tab
+    ? []
+    : await chrome.tabs.query({ active: true, currentWindow: true });
   const activeTab = tab || fallbackTabs[0];
 
   if (!activeTab?.id) {
@@ -381,7 +408,7 @@ async function extractCurrentPage() {
   try {
     await chrome.scripting.executeScript({
       target: { tabId: activeTab.id },
-      files: ["content.js"]
+      files: ["content.js"],
     });
   } catch (error) {
     if (!String(error.message || "").includes("Cannot access")) {
@@ -390,7 +417,9 @@ async function extractCurrentPage() {
     throw new Error("这个页面不允许扩展读取内容，请换一个普通网页重试。");
   }
 
-  const response = await chrome.tabs.sendMessage(activeTab.id, { type: "EXTRACT_PAGE" });
+  const response = await chrome.tabs.sendMessage(activeTab.id, {
+    type: "EXTRACT_PAGE",
+  });
   if (!response?.ok) {
     throw new Error(response?.error || "读取网页内容失败。");
   }
@@ -400,7 +429,7 @@ async function extractCurrentPage() {
 
   return {
     ...response.page,
-    tabId: activeTab.id
+    tabId: activeTab.id,
   };
 }
 
@@ -419,7 +448,11 @@ async function runTool(toolId, extraPayload = {}) {
     const session = await ensureActiveSession(currentPage, toolTitle);
     const sessionId = session.id;
     pendingSessionId = sessionId;
-    const userMessage = createOptimisticUserMessage(tool, extraPayload, currentPage);
+    const userMessage = createOptimisticUserMessage(
+      tool,
+      extraPayload,
+      currentPage
+    );
     appendOptimisticMessage(sessionId, userMessage);
     pendingSessionIds.add(sessionId);
     syncComposerState();
@@ -435,8 +468,8 @@ async function runTool(toolId, extraPayload = {}) {
       payload: {
         ...extraPayload,
         sessionId,
-        page: currentPage
-      }
+        page: currentPage,
+      },
     });
 
     if (!response?.ok) {
@@ -457,16 +490,24 @@ async function runTool(toolId, extraPayload = {}) {
     if (latestRun.status === "failed") {
       setStatus(latestRun.error || "工具运行失败。", "error");
     } else if (latestRun.normalizationWarnings?.length) {
-      setStatus(`完成，用时 ${latestRun.elapsedMs}ms。结构化输出已降级或修正。Debug ID：${latestRun.id}`);
+      setStatus(
+        `完成，用时 ${latestRun.elapsedMs}ms。结构化输出已降级或修正。Debug ID：${latestRun.id}`
+      );
     } else {
-      setStatus(`完成，用时 ${latestRun.elapsedMs}ms。Debug ID：${latestRun.id}`);
+      setStatus(
+        `完成，用时 ${latestRun.elapsedMs}ms。Debug ID：${latestRun.id}`
+      );
     }
   } catch (error) {
     setStatus(error.message, "error");
   } finally {
     if (pendingSessionId) {
       const wasPending = pendingSessionIds.delete(pendingSessionId);
-      if (wasPending && activeSessionId === pendingSessionId && currentSession) {
+      if (
+        wasPending &&
+        activeSessionId === pendingSessionId &&
+        currentSession
+      ) {
         renderSession(currentSession);
       }
     }
@@ -477,16 +518,20 @@ async function runTool(toolId, extraPayload = {}) {
 
 async function ensureActiveSession(page, fallbackTitle) {
   if (
-    activeSessionId
-    && currentSession?.id === activeSessionId
-    && urlsMatch(currentSession.pageUrl, page.url)
+    activeSessionId &&
+    currentSession?.id === activeSessionId &&
+    urlsMatch(currentSession.pageUrl, page.url)
   ) {
     return currentSession;
   }
 
   const matchingSession = findSessionByUrl(page.url);
   if (matchingSession) {
-    await loadSession(matchingSession.id, { refreshLists: false, openPage: false, quiet: true });
+    await loadSession(matchingSession.id, {
+      refreshLists: false,
+      openPage: false,
+      quiet: true,
+    });
     return currentSession;
   }
 
@@ -494,8 +539,8 @@ async function ensureActiveSession(page, fallbackTitle) {
     type: "CREATE_SESSION",
     payload: {
       title: fallbackTitle,
-      page
-    }
+      page,
+    },
   });
   if (!response?.ok) {
     throw new Error(response?.error || "创建 Session 失败。");
@@ -519,7 +564,7 @@ function createOptimisticUserMessage(tool, extraPayload, page) {
     contentText: tool?.requiresInstruction
       ? customInstruction
       : `${tool?.title || "内置技能"} · ${page.selectionOnly ? "选中文本" : "当前网页"}`,
-    output: null
+    output: null,
   };
 }
 
@@ -531,7 +576,7 @@ function appendOptimisticMessage(sessionId, message) {
   currentSession = {
     ...currentSession,
     messageCount: (currentSession.messageCount || 0) + 1,
-    messages: [...(currentSession.messages || []), message]
+    messages: [...(currentSession.messages || []), message],
   };
   renderSession(currentSession);
   scrollMessagesToBottom();
@@ -564,7 +609,10 @@ async function createNewSession() {
 
 async function refreshSessions(showErrors, options = {}) {
   try {
-    const response = await chrome.runtime.sendMessage({ type: "GET_SESSIONS", limit: MAX_SESSION_ITEMS });
+    const response = await chrome.runtime.sendMessage({
+      type: "GET_SESSIONS",
+      limit: MAX_SESSION_ITEMS,
+    });
     if (!response?.ok) {
       throw new Error(response?.error || "读取历史 session 失败。");
     }
@@ -577,8 +625,17 @@ async function refreshSessions(showErrors, options = {}) {
         return;
       }
     }
-    if (options.loadLatestIfEmpty && !currentPage?.url && !activeSessionId && !newSessionPending && sessions[0]?.id) {
-      await loadSession(sessions[0].id, { refreshLists: false, openPage: false });
+    if (
+      options.loadLatestIfEmpty &&
+      !currentPage?.url &&
+      !activeSessionId &&
+      !newSessionPending &&
+      sessions[0]?.id
+    ) {
+      await loadSession(sessions[0].id, {
+        refreshLists: false,
+        openPage: false,
+      });
     }
   } catch (error) {
     elements.sessionList.textContent = "";
@@ -604,8 +661,10 @@ function renderSessionList(sessions) {
       "sidebar-item",
       "session-item",
       activeSessionId === session.id ? "is-active" : "",
-      isLoading ? "is-loading" : ""
-    ].filter(Boolean).join(" ");
+      isLoading ? "is-loading" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
     button.dataset.sessionId = session.id;
 
     const title = document.createElement("span");
@@ -615,10 +674,14 @@ function renderSessionList(sessions) {
     title.title = sessionTitle;
     const meta = document.createElement("span");
     meta.className = "item-meta";
-    meta.textContent = isLoading ? `回答中 · ${formatTime(session.updatedAt)}` : formatTime(session.updatedAt);
+    meta.textContent = isLoading
+      ? `回答中 · ${formatTime(session.updatedAt)}`
+      : formatTime(session.updatedAt);
     button.append(title, meta);
 
-    button.addEventListener("click", () => loadSession(session.id, { openPage: true }));
+    button.addEventListener("click", () =>
+      loadSession(session.id, { openPage: true })
+    );
     elements.sessionList.append(button);
   });
 }
@@ -635,7 +698,7 @@ async function selectSessionForPage(page, options = {}) {
       await loadSession(matchingSession.id, {
         refreshLists: false,
         openPage: false,
-        quiet: true
+        quiet: true,
       });
     }
     renderSessionList(sessions);
@@ -660,13 +723,19 @@ function findSessionByUrl(url, sessions = latestSessions) {
   if (!normalizedUrl) {
     return null;
   }
-  return sessions.find((session) => normalizeUrlForSession(session.pageUrl) === normalizedUrl) || null;
+  return (
+    sessions.find(
+      (session) => normalizeUrlForSession(session.pageUrl) === normalizedUrl
+    ) || null
+  );
 }
 
 function urlsMatch(left, right) {
   const normalizedLeft = normalizeUrlForSession(left);
   const normalizedRight = normalizeUrlForSession(right);
-  return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
+  return Boolean(
+    normalizedLeft && normalizedRight && normalizedLeft === normalizedRight
+  );
 }
 
 function normalizeUrlForSession(value) {
@@ -701,7 +770,10 @@ async function openSessionPage(session) {
 }
 
 async function loadSession(id, options = {}) {
-  const response = await chrome.runtime.sendMessage({ type: "GET_SESSION", id });
+  const response = await chrome.runtime.sendMessage({
+    type: "GET_SESSION",
+    id,
+  });
   if (!response?.ok) {
     setStatus(response?.error || "读取 session 失败。", "error");
     return;
@@ -716,7 +788,9 @@ async function loadSession(id, options = {}) {
     await refreshSessions(false);
   }
   if (!options.quiet) {
-    setStatus(`已加载 Session：${response.data.session.title || response.data.session.id}`);
+    setStatus(
+      `已加载 Session：${response.data.session.title || response.data.session.id}`
+    );
   }
 }
 
@@ -729,11 +803,14 @@ function setCurrentSession(session) {
 
 function renderEmptySession() {
   elements.sessionTitle.textContent = "新 Session";
-  elements.sessionMeta.textContent = "点击底部内置技能会基于当前网页创建本地对话记录，并映射到 Codex session。";
+  elements.sessionMeta.textContent =
+    "点击底部内置技能会基于当前网页创建本地对话记录，并映射到 Codex session。";
   elements.resultStatus.textContent = "idle";
   elements.resultStatus.className = "result-status";
   elements.messageList.textContent = "";
-  elements.messageList.append(renderSystemMessage("选择一个内置技能，或输入自定义指令开始。"));
+  elements.messageList.append(
+    renderSystemMessage("选择一个内置技能，或输入自定义指令开始。")
+  );
   elements.copyButton.disabled = true;
   scrollMessagesToBottom();
 }
@@ -743,10 +820,14 @@ function renderSession(session) {
   elements.sessionTitle.textContent = title;
   elements.sessionTitle.title = title;
   elements.sessionMeta.textContent = [
-    session.codexSessionId ? `Codex：${session.codexSessionId}` : "Codex：待创建",
+    session.codexSessionId
+      ? `Codex：${session.codexSessionId}`
+      : "Codex：待创建",
     session.pageTitle || session.pageUrl || "",
-    `${session.messageCount || 0} 条消息`
-  ].filter(Boolean).join(" · ");
+    `${session.messageCount || 0} 条消息`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   elements.messageList.textContent = "";
   elements.copyButton.disabled = true;
   if (pendingSessionIds.has(session.id)) {
@@ -758,7 +839,9 @@ function renderSession(session) {
   }
 
   if (!session.messages?.length) {
-    elements.messageList.append(renderSystemMessage("这个 Session 还没有消息。"));
+    elements.messageList.append(
+      renderSystemMessage("这个 Session 还没有消息。")
+    );
     elements.copyButton.disabled = true;
     scrollMessagesToBottom();
     return;
@@ -771,12 +854,14 @@ function renderSession(session) {
     }
   });
 
-  const lastAssistant = [...session.messages].reverse().find((message) => message.role === "assistant" && message.output);
+  const lastAssistant = [...session.messages]
+    .reverse()
+    .find((message) => message.role === "assistant" && message.output);
   elements.copyButton.disabled = !lastAssistant?.output?.cards?.length;
   if (lastAssistant && !pendingSessionIds.has(session.id)) {
     latestRun = {
       toolTitle: lastAssistant.toolTitle,
-      normalizedOutput: lastAssistant.output
+      normalizedOutput: lastAssistant.output,
     };
     elements.resultStatus.textContent = formatStatus(lastAssistant.status);
     elements.resultStatus.className = `result-status is-${lastAssistant.status || "idle"}`;
@@ -801,9 +886,9 @@ function renderRunAsSession(run) {
         status: run.status,
         createdAt: run.createdAt,
         contentText: run.normalizedOutput?.summary || "",
-        output: run.normalizedOutput
-      }
-    ]
+        output: run.normalizedOutput,
+      },
+    ],
   };
   setCurrentSession(session);
 }
@@ -818,7 +903,8 @@ function renderSessionMessage(message) {
   titleGroup.className = "chat-message-title-group";
   const title = document.createElement("div");
   title.className = "chat-message-title";
-  title.textContent = message.role === "assistant" ? (message.toolTitle || "Codex") : "你";
+  title.textContent =
+    message.role === "assistant" ? message.toolTitle || "Codex" : "你";
   const meta = document.createElement("div");
   meta.className = "chat-message-meta";
   meta.textContent = formatTime(message.createdAt);
@@ -826,14 +912,18 @@ function renderSessionMessage(message) {
 
   const actions = document.createElement("div");
   actions.className = "chat-message-actions";
-  const collapseButton = createIconButton("collapse", "收起", "card-tool-button");
+  const collapseButton = createIconButton(
+    "collapse",
+    "收起",
+    "card-tool-button"
+  );
   collapseButton.setAttribute("aria-expanded", "true");
   collapseButton.addEventListener("click", () => {
     toggleFoldable(article, body, collapseButton, {
       expandedLabel: "收起",
       collapsedLabel: "展开",
       expandedIcon: "collapse",
-      collapsedIcon: "expand"
+      collapsedIcon: "expand",
     });
   });
   actions.append(collapseButton);
@@ -897,7 +987,7 @@ function renderResultCard(card) {
       expandedLabel: "收起",
       collapsedLabel: "展开",
       expandedIcon: "collapse",
-      collapsedIcon: "expand"
+      collapsedIcon: "expand",
     });
   });
 
@@ -909,9 +999,19 @@ function renderCardContent(card) {
   const fragment = document.createDocumentFragment();
 
   if (card.renderType === "markdown") {
-    fragment.append(renderIframePreview(markdownToHtml(card.content?.markdown || ""), `${card.title || "Markdown"} 渲染`));
+    fragment.append(
+      renderIframePreview(
+        markdownToHtml(card.content?.markdown || ""),
+        `${card.title || "Markdown"} 渲染`
+      )
+    );
   } else if (card.renderType === "code") {
-    fragment.append(renderCodeBlock(card.content?.code || "", card.content?.language || "text"));
+    fragment.append(
+      renderCodeBlock(
+        card.content?.code || "",
+        card.content?.language || "text"
+      )
+    );
   } else if (card.renderType === "html") {
     fragment.append(renderHtmlBlock(card));
   } else if (card.renderType === "table") {
@@ -919,7 +1019,12 @@ function renderCardContent(card) {
   } else if (card.renderType === "kv") {
     fragment.append(renderKv(card.content));
   } else {
-    fragment.append(renderIframePreview(`<pre>${escapeHtml(JSON.stringify(card.content || {}, null, 2))}</pre>`, "JSON 渲染"));
+    fragment.append(
+      renderIframePreview(
+        `<pre>${escapeHtml(JSON.stringify(card.content || {}, null, 2))}</pre>`,
+        "JSON 渲染"
+      )
+    );
   }
 
   return fragment;
@@ -945,7 +1050,12 @@ function renderHtmlBlock(card) {
   const wrapper = document.createElement("div");
   wrapper.className = "html-block";
   if (card.allowPreview) {
-    wrapper.append(renderIframePreview(card.content?.html || "", `${card.title || "HTML"} 安全预览`));
+    wrapper.append(
+      renderIframePreview(
+        card.content?.html || "",
+        `${card.title || "HTML"} 安全预览`
+      )
+    );
   } else {
     wrapper.append(renderCodeBlock(card.content?.html || "", "html"));
   }
@@ -957,20 +1067,46 @@ function renderIframePreview(html, title) {
   iframe.className = "card-preview";
   iframe.title = title;
   iframe.setAttribute("sandbox", "allow-same-origin");
-  iframe.addEventListener("load", () => resizeIframePreview(iframe));
+  iframe.addEventListener("load", () => {
+    resizeIframePreview(iframe);
+    bindIframePreviewCollapse(iframe);
+  });
   iframe.srcdoc = buildPreviewSrcdoc(html);
   return iframe;
 }
 
+function bindIframePreviewCollapse(iframe) {
+  try {
+    const doc = iframe.contentDocument;
+    if (!doc) {
+      return;
+    }
+    doc.addEventListener("pointerdown", collapseSidebarFromContentInteraction, {
+      capture: true,
+    });
+    doc.addEventListener("click", collapseSidebarFromContentInteraction, {
+      capture: true,
+    });
+  } catch {
+    // Some browser pages can still deny iframe document access. The parent click handler remains as fallback.
+  }
+}
+
 function renderFullscreenCardContent(card) {
   if (card.renderType === "markdown") {
-    const preview = renderIframePreview(markdownToHtml(card.content?.markdown || ""), `${card.title || "Markdown"} 渲染`);
+    const preview = renderIframePreview(
+      markdownToHtml(card.content?.markdown || ""),
+      `${card.title || "Markdown"} 渲染`
+    );
     preview.classList.add("is-fullscreen-preview");
     return preview;
   }
 
   if (card.renderType === "html" && card.allowPreview) {
-    const preview = renderIframePreview(card.content?.html || "", `${card.title || "HTML"} 安全预览`);
+    const preview = renderIframePreview(
+      card.content?.html || "",
+      `${card.title || "HTML"} 安全预览`
+    );
     preview.classList.add("is-fullscreen-preview");
     return preview;
   }
@@ -995,7 +1131,10 @@ function resizeIframePreview(iframe) {
     );
     const minHeight = readPixelVariable(iframe, "--preview-min-height", 72);
     const maxHeight = readPixelMaxVariable(iframe, "--preview-max-height", 360);
-    const targetHeight = Math.max(minHeight, Math.min(contentHeight, maxHeight));
+    const targetHeight = Math.max(
+      minHeight,
+      Math.min(contentHeight, maxHeight)
+    );
     iframe.style.height = `${Math.ceil(targetHeight)}px`;
     iframe.classList.toggle("is-scrollable", contentHeight > maxHeight + 1);
     if (shouldStickToBottom) {
@@ -1112,7 +1251,9 @@ async function runHealthCheck(showSuccess) {
 }
 
 async function clearServerHistory() {
-  const serverUrl = normalizeServerUrl(elements.serverUrl.value || DEFAULT_SERVER_URL);
+  const serverUrl = normalizeServerUrl(
+    elements.serverUrl.value || DEFAULT_SERVER_URL
+  );
   serverUrlHistory = [serverUrl];
   await chrome.storage.local.set({ serverUrlHistory });
   renderServerUrlHistory();
@@ -1178,13 +1319,21 @@ function isStaticMenu() {
 }
 
 function toggleSidebar() {
-  setSidebarCollapsed(!elements.shell.classList.contains("is-sidebar-collapsed"));
+  setSidebarCollapsed(
+    !elements.shell.classList.contains("is-sidebar-collapsed")
+  );
 }
 
 function setSidebarCollapsed(shouldCollapse) {
   elements.shell.classList.toggle("is-sidebar-collapsed", shouldCollapse);
-  elements.sidebarCollapseButton.setAttribute("aria-expanded", String(!shouldCollapse));
-  elements.sidebarCollapseButton.setAttribute("aria-label", shouldCollapse ? "展开侧边栏" : "折叠侧边栏");
+  elements.sidebarCollapseButton.setAttribute(
+    "aria-expanded",
+    String(!shouldCollapse)
+  );
+  elements.sidebarCollapseButton.setAttribute(
+    "aria-label",
+    shouldCollapse ? "展开侧边栏" : "折叠侧边栏"
+  );
 }
 
 function collapseSidebarFromOutsideClick(event) {
@@ -1192,7 +1341,28 @@ function collapseSidebarFromOutsideClick(event) {
     return;
   }
   const target = event.target instanceof Element ? event.target : null;
-  if (!target || elements.cardModal.open || target.closest(".resource-sidebar, .settings-panel")) {
+  if (
+    !target ||
+    elements.cardModal.open ||
+    target.closest(".resource-sidebar, .settings-panel")
+  ) {
+    return;
+  }
+  setSidebarCollapsed(true);
+}
+
+function collapseSidebarFromCardPointer(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest(".result-card")) {
+    collapseSidebarFromContentInteraction();
+  }
+}
+
+function collapseSidebarFromContentInteraction() {
+  if (
+    elements.shell.classList.contains("is-sidebar-collapsed") ||
+    elements.cardModal.open
+  ) {
     return;
   }
   setSidebarCollapsed(true);
@@ -1208,7 +1378,9 @@ function toggleSidebarSection(button) {
   const shouldCollapse = !target.hidden;
   target.hidden = shouldCollapse;
   button.setAttribute("aria-expanded", String(!shouldCollapse));
-  button.closest(".sidebar-section, .skill-tray")?.classList.toggle("is-collapsed", shouldCollapse);
+  button
+    .closest(".sidebar-section, .skill-tray")
+    ?.classList.toggle("is-collapsed", shouldCollapse);
 }
 
 function toggleFoldable(container, body, button, labels) {
@@ -1219,7 +1391,9 @@ function toggleFoldable(container, body, button, labels) {
   if (button.dataset.iconButton === "true") {
     setIconButton(
       button,
-      shouldCollapse ? labels.collapsedIcon || "expand" : labels.expandedIcon || "collapse",
+      shouldCollapse
+        ? labels.collapsedIcon || "expand"
+        : labels.expandedIcon || "collapse",
       label
     );
   } else {
@@ -1281,7 +1455,10 @@ function formatCardMeta(card) {
 }
 
 function closeCardModal() {
-  if (typeof elements.cardModal.close === "function" && elements.cardModal.open) {
+  if (
+    typeof elements.cardModal.close === "function" &&
+    elements.cardModal.open
+  ) {
     elements.cardModal.close();
   } else {
     elements.cardModal.removeAttribute("open");
@@ -1305,9 +1482,10 @@ function syncScrollToBottomButton() {
 }
 
 function isMessageListNearBottom(threshold = 80) {
-  const distanceFromBottom = elements.messageList.scrollHeight
-    - elements.messageList.scrollTop
-    - elements.messageList.clientHeight;
+  const distanceFromBottom =
+    elements.messageList.scrollHeight -
+    elements.messageList.scrollTop -
+    elements.messageList.clientHeight;
   return distanceFromBottom <= threshold;
 }
 
@@ -1333,9 +1511,14 @@ function cardToPlainText(card) {
     return card.content?.html || "";
   }
   if (card.renderType === "table") {
-    const columns = Array.isArray(card.content?.columns) ? card.content.columns : [];
+    const columns = Array.isArray(card.content?.columns)
+      ? card.content.columns
+      : [];
     const rows = Array.isArray(card.content?.rows) ? card.content.rows : [];
-    return [columns.join("\t"), ...rows.map((row) => (Array.isArray(row) ? row : []).join("\t"))].join("\n");
+    return [
+      columns.join("\t"),
+      ...rows.map((row) => (Array.isArray(row) ? row : []).join("\t")),
+    ].join("\n");
   }
   if (card.renderType === "kv") {
     const items = Array.isArray(card.content?.items) ? card.content.items : [];
@@ -1350,8 +1533,10 @@ function runToPlainText(run) {
   return [
     output.title || run.toolTitle || "工具结果",
     output.summary || "",
-    ...cards.map((card) => `\n## ${card.title}\n${cardToPlainText(card)}`)
-  ].filter(Boolean).join("\n");
+    ...cards.map((card) => `\n## ${card.title}\n${cardToPlainText(card)}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function markdownToHtml(markdown) {
@@ -1363,7 +1548,9 @@ function markdownToHtml(markdown) {
   for (const line of lines) {
     if (line.startsWith("```")) {
       if (inCode) {
-        html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+        html.push(
+          `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`
+        );
         codeLines = [];
         inCode = false;
       } else {
@@ -1379,9 +1566,13 @@ function markdownToHtml(markdown) {
 
     if (/^#{1,6}\s+/.test(line)) {
       const level = Math.min(line.match(/^#+/)?.[0].length || 2, 6);
-      html.push(`<h${level}>${escapeHtml(line.replace(/^#{1,6}\s+/, ""))}</h${level}>`);
+      html.push(
+        `<h${level}>${escapeHtml(line.replace(/^#{1,6}\s+/, ""))}</h${level}>`
+      );
     } else if (/^\s*[-*]\s+/.test(line)) {
-      html.push(`<p class="bullet">${escapeHtml(line.replace(/^\s*[-*]\s+/, ""))}</p>`);
+      html.push(
+        `<p class="bullet">${escapeHtml(line.replace(/^\s*[-*]\s+/, ""))}</p>`
+      );
     } else if (line.trim()) {
       html.push(`<p>${escapeHtml(line)}</p>`);
     } else {
@@ -1407,14 +1598,14 @@ function buildPreviewSrcdoc(html) {
 
   return [
     "<!doctype html>",
-    "<meta charset=\"utf-8\">",
+    '<meta charset="utf-8">',
     "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src data: blob:; style-src 'unsafe-inline'; font-src data:;\">",
     "<style>",
     "body{margin:0;padding:12px;background:#fff;color:#171a1f;font:14px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}",
     "h1,h2,h3,h4,h5,h6{margin:0.9em 0 0.35em;line-height:1.2;} p{margin:0.45em 0;} pre{overflow:auto;background:#f3f5f7;border:1px solid #d9dde3;border-radius:8px;padding:10px;} code{font:12px/1.5 SFMono-Regular,Consolas,monospace;} .bullet{padding-left:1em;position:relative}.bullet:before{content:'-';position:absolute;left:0;color:#5b6572}",
     "</style>",
-    "<base href=\"about:blank\">",
-    cleaned
+    '<base href="about:blank">',
+    cleaned,
   ].join("");
 }
 
@@ -1489,6 +1680,8 @@ function addHistoryItem(history, item) {
     return normalizeHistory(history);
   }
 
-  return [value, ...normalizeHistory(history).filter((historyItem) => historyItem !== value)]
-    .slice(0, MAX_HISTORY_ITEMS);
+  return [
+    value,
+    ...normalizeHistory(history).filter((historyItem) => historyItem !== value),
+  ].slice(0, MAX_HISTORY_ITEMS);
 }
