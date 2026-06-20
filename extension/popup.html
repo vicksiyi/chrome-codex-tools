@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Codex Web Assistant</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>Codex Web Assistant</h1>
+          <p id="pageMeta">读取当前网页后开始</p>
+        </div>
+        <button id="healthButton" class="icon-button" title="检查本地 Codex 服务" aria-label="检查本地 Codex 服务">
+          <span aria-hidden="true">●</span>
+        </button>
+      </header>
+
+      <section class="controls" aria-label="常用操作">
+        <button class="task-button primary" data-task="summarize">总结</button>
+        <button class="task-button" data-task="translate">翻译中文</button>
+        <button class="task-button" data-task="keypoints">提取重点</button>
+        <button class="task-button" data-task="qa">问答准备</button>
+      </section>
+
+      <section class="custom">
+        <label for="customPrompt">自定义指令</label>
+        <textarea id="customPrompt" rows="4" placeholder="例如：把这页内容整理成项目待办，并标出风险点。"></textarea>
+        <button id="runCustomButton" class="wide-button">运行自定义指令</button>
+      </section>
+
+      <section class="settings">
+        <label for="serverUrl">本地服务地址</label>
+        <div class="setting-row">
+          <input id="serverUrl" type="url" spellcheck="false" value="http://127.0.0.1:8787">
+          <button id="saveSettingsButton">保存</button>
+        </div>
+      </section>
+
+      <section class="status" aria-live="polite">
+        <div id="statusText">准备就绪</div>
+        <progress id="progress" hidden></progress>
+      </section>
+
+      <section class="result" aria-label="Codex 输出">
+        <div id="resultText" class="result-text"></div>
+        <div class="result-actions">
+          <button id="copyButton" disabled>复制结果</button>
+        </div>
+      </section>
+    </main>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

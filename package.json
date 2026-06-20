@@ -1,0 +1,14 @@
+{
+  "name": "codex-web-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser extension plus local bridge for using local Codex on the current web page.",
+  "type": "module",
+  "scripts": {
+    "start": "node local-codex-bridge/server.js",
+    "check": "node --check local-codex-bridge/server.js && node --check extension/background.js && node --check extension/content.js && node --check extension/popup.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
