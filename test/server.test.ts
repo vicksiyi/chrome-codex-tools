@@ -180,7 +180,7 @@ test("normalizeToolOutput accepts structured cards", () => {
   assert.equal(normalized.result.cards[1].renderType, "table");
 });
 
-test("normalizeToolOutput extracts wrapped structured JSON with HTML code cards", () => {
+test("normalizeToolOutput converts wrapped HTML code cards to HTML cards", () => {
   const tool = getToolDefinition("custom_prompt");
   assert.ok(tool);
 
@@ -203,9 +203,9 @@ test("normalizeToolOutput extracts wrapped structured JSON with HTML code cards"
 
   assert.deepEqual(normalized.warnings, []);
   assert.equal(normalized.result.title, "AI Hero 网站内容概述");
-  assert.equal(normalized.result.cards[0].renderType, "code");
-  assert.equal(normalized.result.cards[0].content.language, "html");
-  assert.match(String(normalized.result.cards[0].content.code), /<section>/);
+  assert.equal(normalized.result.cards[0].renderType, "html");
+  assert.equal(normalized.result.cards[0].allowPreview, true);
+  assert.match(String(normalized.result.cards[0].content.html), /<section>/);
 });
 
 test("normalizeToolOutput prefers final tool JSON when Codex output contains JSON events", () => {
@@ -235,9 +235,9 @@ test("normalizeToolOutput prefers final tool JSON when Codex output contains JSO
 
   assert.deepEqual(normalized.warnings, []);
   assert.equal(normalized.result.title, "HTML result");
-  assert.equal(normalized.result.cards[0].renderType, "code");
-  assert.equal(normalized.result.cards[0].content.language, "html");
-  assert.match(String(normalized.result.cards[0].content.code), /<section>ok<\/section>/);
+  assert.equal(normalized.result.cards[0].renderType, "html");
+  assert.equal(normalized.result.cards[0].allowPreview, true);
+  assert.match(String(normalized.result.cards[0].content.html), /<section>ok<\/section>/);
 });
 
 test("normalizeToolOutput downgrades invalid JSON to markdown with warnings", () => {

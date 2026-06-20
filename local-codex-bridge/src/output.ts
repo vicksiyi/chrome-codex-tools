@@ -111,12 +111,22 @@ function normalizeCard(
       warnings.push(`Code card ${index + 1} did not include code.`);
       return null;
     }
+    const language = cleanString(content.language ?? value.language, 80) || (content.html || value.html ? "html" : "text");
+    if (isHtmlLanguage(language)) {
+      return {
+        id: cleanString(value.id, 120) || `html-${index + 1}`,
+        title,
+        renderType: "html",
+        allowPreview: true,
+        content: { html: code }
+      };
+    }
     return {
       id,
       title,
       renderType,
       content: {
-        language: cleanString(content.language ?? value.language, 80) || (content.html || value.html ? "html" : "text"),
+        language,
         code
       }
     };
@@ -166,6 +176,11 @@ function normalizeCard(
   }
 
   return null;
+}
+
+function isHtmlLanguage(language: string) {
+  const normalized = cleanString(language, 80).toLowerCase();
+  return normalized === "html" || normalized === "htm" || normalized === "text/html";
 }
 
 function normalizeTableContent(content: Record<string, unknown>, value: Record<string, unknown>) {
