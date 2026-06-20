@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Codex Web Assistant Debug</title>
+    <link rel="stylesheet" href="debug.css">
+  </head>
+  <body>
+    <main class="debug-shell">
+      <header class="debug-header">
+        <div class="debug-brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M6.5 7.25 3 12l3.5 4.75M17.5 7.25 21 12l-3.5 4.75M14 4.75 10 19.25"/>
+            </svg>
+          </div>
+          <div class="brand-copy">
+            <div class="eyebrow">Diagnostics Console</div>
+            <h1>Codex Debug</h1>
+            <p id="serverMeta">读取本地服务状态中...</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="refreshButton" class="action-button" type="button">
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6"/>
+            </svg>
+            <span>刷新</span>
+          </button>
+          <button id="healthButton" class="action-button" type="button">
+            <span class="status-light" aria-hidden="true"></span>
+            <span>健康检查</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="debug-grid">
+        <aside class="panel list-panel">
+          <div class="panel-title">
+            <div>
+              <div class="panel-kicker">Runs</div>
+              <h2>工具运行</h2>
+            </div>
+            <span id="runCount" class="count-badge">0</span>
+          </div>
+          <div id="runList" class="run-list"></div>
+        </aside>
+
+        <section class="panel detail-panel">
+          <div class="panel-title">
+            <div>
+              <div class="panel-kicker">Inspector</div>
+              <h2>运行详情</h2>
+            </div>
+            <span id="selectedRunId" class="id-pill">未选择</span>
+          </div>
+
+          <dl class="meta-list">
+            <div>
+              <dt>工具</dt>
+              <dd id="detailTask">-</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd id="detailSession">-</dd>
+            </div>
+            <div>
+              <dt>状态</dt>
+              <dd id="detailStatus">-</dd>
+            </div>
+            <div>
+              <dt>来源</dt>
+              <dd id="detailInputSource">-</dd>
+            </div>
+            <div>
+              <dt>网页</dt>
+              <dd id="detailPage">-</dd>
+            </div>
+            <div>
+              <dt>耗时</dt>
+              <dd id="detailElapsed">-</dd>
+            </div>
+          </dl>
+
+          <div class="field-grid">
+            <section class="debug-field compact-field">
+              <label for="detailInstruction">自定义指令</label>
+              <textarea id="detailInstruction" readonly></textarea>
+            </section>
+
+            <section class="debug-field">
+              <label for="detailRequest">提交输入 JSON</label>
+              <textarea id="detailRequest" readonly></textarea>
+            </section>
+
+            <section class="debug-field wide-field">
+              <label for="detailPrompt">提交给 Codex 的 Prompt</label>
+              <textarea id="detailPrompt" readonly></textarea>
+            </section>
+
+            <section class="debug-field">
+              <label for="detailRawOutput">Codex 原始输出</label>
+              <textarea id="detailRawOutput" readonly></textarea>
+            </section>
+
+            <section class="debug-field">
+              <label for="detailNormalizedOutput">规范化输出 JSON</label>
+              <textarea id="detailNormalizedOutput" readonly></textarea>
+            </section>
+
+            <section class="debug-field compact-field">
+              <label for="detailWarnings">规范化警告</label>
+              <textarea id="detailWarnings" readonly></textarea>
+            </section>
+
+            <section class="debug-field compact-field">
+              <label for="detailError">错误 / stderr</label>
+              <textarea id="detailError" readonly></textarea>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section id="statusText" class="status">准备就绪</section>
+    </main>
+    <script src="debug.js" type="module"></script>
+  </body>
+</html>

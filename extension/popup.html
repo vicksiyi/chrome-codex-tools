@@ -7,50 +7,166 @@
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <main class="shell">
-      <header class="topbar">
-        <div>
-          <h1>Codex Web Assistant</h1>
-          <p id="pageMeta">读取当前网页后开始</p>
+    <main class="assistant-shell is-sidebar-collapsed">
+      <section id="settingsPanel" class="settings-panel" hidden>
+        <div class="field-header">
+          <div>
+            <label for="serverUrl">本地服务地址</label>
+            <div class="field-note">用于连接本机 Codex bridge</div>
+          </div>
+          <div class="settings-actions">
+            <div class="history-controls">
+              <select id="serverUrlHistory" aria-label="历史地址">
+                <option value="">历史地址</option>
+              </select>
+              <button id="clearServerHistoryButton" type="button">清空</button>
+            </div>
+            <button id="closeSettingsButton" class="settings-close-button icon-button" type="button" title="关闭设置" aria-label="关闭设置">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <button id="healthButton" class="icon-button" title="检查本地 Codex 服务" aria-label="检查本地 Codex 服务">
-          <span aria-hidden="true">●</span>
-        </button>
-      </header>
-
-      <section class="controls" aria-label="常用操作">
-        <button class="task-button primary" data-task="summarize">总结</button>
-        <button class="task-button" data-task="translate">翻译中文</button>
-        <button class="task-button" data-task="keypoints">提取重点</button>
-        <button class="task-button" data-task="qa">问答准备</button>
-      </section>
-
-      <section class="custom">
-        <label for="customPrompt">自定义指令</label>
-        <textarea id="customPrompt" rows="4" placeholder="例如：把这页内容整理成项目待办，并标出风险点。"></textarea>
-        <button id="runCustomButton" class="wide-button">运行自定义指令</button>
-      </section>
-
-      <section class="settings">
-        <label for="serverUrl">本地服务地址</label>
         <div class="setting-row">
           <input id="serverUrl" type="url" spellcheck="false" value="http://127.0.0.1:8787">
-          <button id="saveSettingsButton">保存</button>
+          <button id="saveSettingsButton" type="button">保存</button>
         </div>
       </section>
 
-      <section class="status" aria-live="polite">
-        <div id="statusText">准备就绪</div>
-        <progress id="progress" hidden></progress>
+      <section class="workspace" aria-label="Codex 工具工作区">
+        <aside class="resource-sidebar" aria-label="Session 侧边栏">
+          <div class="sidebar-shell-header">
+            <div class="brand-lockup" aria-label="Codex Web Assistant">
+              <div class="brand-mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6.5 7.25 3 12l3.5 4.75M17.5 7.25 21 12l-3.5 4.75M14 4.75 10 19.25"/>
+                </svg>
+              </div>
+              <div class="brand-copy">
+                <div class="brand-title">Codex</div>
+                <div class="brand-subtitle">Web Assistant</div>
+              </div>
+            </div>
+            <button id="sidebarCollapseButton" class="sidebar-collapse-button" type="button" aria-label="展开侧边栏" aria-expanded="false">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="m15 18-6-6 6-6"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="sidebar-content">
+            <nav id="menuPanel" class="sidebar-action-rail" data-static="true" aria-label="助手菜单">
+              <button id="copyButton" class="sidebar-action-button" type="button" title="复制结果" aria-label="复制结果" disabled>
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                  <path d="M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/>
+                  <path d="M9 2h6"/>
+                </svg>
+              </button>
+              <button id="refreshPageButton" class="sidebar-action-button" type="button" title="刷新当前网页" aria-label="刷新当前网页">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                  <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6"/>
+                </svg>
+              </button>
+              <button id="healthButton" class="sidebar-action-button status-dot" type="button" title="检查本地 Codex 服务" aria-label="检查本地 Codex 服务">
+                <span class="status-light" aria-hidden="true"></span>
+              </button>
+              <button id="openDebugButton" class="sidebar-action-button" type="button" title="打开调试页" aria-label="打开调试页">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                  <path d="M8 9l3 3-3 3M13 15h3"/>
+                  <path d="M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/>
+                </svg>
+              </button>
+              <button id="toggleSettingsButton" class="sidebar-action-button" type="button" title="打开设置" aria-label="打开设置">
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                  <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/>
+                  <path d="M2 14h4M10 8h4M18 16h4"/>
+                </svg>
+              </button>
+            </nav>
+
+            <section class="sidebar-section session-section">
+              <div class="sidebar-heading">
+                <h2>Session</h2>
+              </div>
+              <div id="sessionList" class="sidebar-list"></div>
+            </section>
+          </div>
+        </aside>
+
+        <section class="conversation" aria-label="Session 对话">
+          <header class="conversation-toolbar" aria-hidden="true" hidden>
+            <div class="page-state" aria-hidden="true">
+              <div id="pageMeta" class="page-meta">等待当前网页</div>
+              <div id="pageContext" class="message-body">切换标签页后会自动刷新；运行工具前会重新读取当前活动网页。</div>
+              <div id="sessionTitle" class="session-title">新 Session</div>
+              <div id="sessionMeta" class="session-meta">运行技能后会生成本地对话记录。</div>
+              <span id="resultStatus" class="result-status">idle</span>
+            </div>
+
+            <button id="menuButton" class="icon-button menu-trigger" type="button" title="打开菜单" aria-label="打开菜单" hidden>
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16"/>
+              </svg>
+            </button>
+          </header>
+
+          <div id="messageList" class="message-list"></div>
+          <button id="scrollToBottomButton" class="scroll-bottom-button" type="button" title="滚动到底部" aria-label="滚动到底部" hidden>
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+              <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+          </button>
+        </section>
       </section>
 
-      <section class="result" aria-label="Codex 输出">
-        <div id="resultText" class="result-text"></div>
-        <div class="result-actions">
-          <button id="copyButton" disabled>复制结果</button>
+      <section class="composer" aria-label="任务输入">
+        <section class="skill-tray">
+          <div id="skillList" class="sidebar-list skill-strip"></div>
+        </section>
+
+        <div class="input-box">
+          <textarea id="customPrompt" rows="3" placeholder="输入自定义指令，使用当前选中文本或网页作为上下文"></textarea>
+          <div class="input-actions">
+            <button id="runCustomButton" class="send-button" type="button" title="发送给 Codex" aria-label="发送给 Codex">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+            </button>
+          </div>
         </div>
+
+        <section class="status" aria-live="polite">
+          <div id="statusText">准备就绪</div>
+          <progress id="progress" hidden></progress>
+        </section>
       </section>
     </main>
+
+    <dialog id="cardModal" class="card-modal" aria-labelledby="cardModalTitle">
+      <div class="card-modal-panel">
+        <header class="card-modal-header">
+          <div>
+            <div id="cardModalTitle" class="card-modal-title">结果详情</div>
+            <div id="cardModalMeta" class="card-modal-meta"></div>
+          </div>
+          <div class="card-modal-actions">
+            <button id="cardModalCopyButton" class="card-tool-button is-icon" type="button" title="复制" aria-label="复制">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M8 4h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/>
+                <path d="M9 2h6"/>
+              </svg>
+            </button>
+            <button id="cardModalCloseButton" class="icon-button" type="button" aria-label="关闭">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+        <div id="cardModalBody" class="card-modal-body"></div>
+      </div>
+    </dialog>
     <script src="popup.js" type="module"></script>
   </body>
 </html>
