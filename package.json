@@ -18,9 +18,15 @@
     "autostart:restart": "sh scripts/autostart.sh restart",
     "autostart:status": "sh scripts/autostart.sh status",
     "test": "node --test test/*.test.ts",
-    "check": "node -e \"import('./local-codex-bridge/server.ts')\" && node --check extension/background.js && node --check extension/content.js && node --check extension/popup.js && node --check extension/debug.js && sh -n scripts/check.sh && sh -n scripts/start.sh && sh -n scripts/stop.sh && sh -n scripts/daemon.sh && sh -n scripts/autostart.sh && node --test test/*.test.ts"
+    "check": "node -e \"import('./local-codex-bridge/server.ts')\" && node --check extension/background.js && node --check extension/content.js && node --check extension/popup.js && node --check extension/debug.js && sh -n scripts/check.sh && sh -n scripts/start.sh && sh -n scripts/stop.sh && sh -n scripts/daemon.sh && sh -n scripts/autostart.sh && node --test test/*.test.ts",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=24"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.4"
   }
 }
